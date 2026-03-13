@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Diletto Artesanal</title>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;900&family=Archivo+Black&family=Fredoka+One&display=swap" rel="stylesheet">
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
     <style>
         :root {
             --terracota: #B73225;
@@ -83,7 +87,7 @@
     <div id="ranking-overlay">
         <div id="ranking-box">
             <div onclick="goToMenu()" style="position:absolute; top:10px; right:15px; font-size:1.5rem; cursor:pointer;">×</div>
-            <h2 style="font-family:'Fredoka One'; color:var(--crema); font-size:1.3rem; margin:0;">RANKING</h2>
+            <h2 style="font-family:'Fredoka One'; color:var(--crema); font-size:1.3rem; margin:0;">RANKING GLOBAL</h2>
             <div class="ranking-list" id="ranking-container"></div>
             <button class="btn btn-primary" style="padding:12px; font-size:0.9rem;" onclick="showPrep()">JUGAR AHORA</button>
         </div>
@@ -96,7 +100,7 @@
                 <label class="input-label">Nombre</label>
                 <input type="text" id="user-name" class="input-field" placeholder="Tu nombre">
             </div>
-            <button class="btn btn-primary" style="padding:12px; font-size:0.9rem;" onclick="restartOnly()">SUPERA TU PUNTAJE</button>
+            <button class="btn btn-primary" style="padding:12px; font-size:0.9rem;" onclick="restartOnly()">SUPERAR PUNTAJE</button>
             <button class="btn btn-primary" style="padding:12px; font-size:0.8rem; background-color: #5a140d;" onclick="registerOnly()">GUARDAR PUNTAJE</button>
             <button class="btn btn-secondary" style="padding:10px; font-size:0.8rem;" onclick="showRanking()">VER RANKING</button>
         </div>
@@ -133,18 +137,38 @@
     <canvas id="gameCanvas"></canvas>
 
 <script>
-    let localRanking = JSON.parse(localStorage.getItem('diletto_ranking')) || [];
+    // CONFIGURACIÓN DE FIREBASE (Conectado a tu proyecto Dilettogame)
+    const firebaseConfig = {
+        apiKey: "AIzaSyCzwKie9ym9TaTiNFf3dk-3C-gTjp61qJk",
+        authDomain: "dilettogame.firebaseapp.com",
+        projectId: "dilettogame",
+        storageBucket: "dilettogame.firebasestorage.app",
+        messagingSenderId: "122618895761",
+        appId: "1:122618895761:web:0226da03b3c7eeb17d4e30",
+        databaseURL: "https://dilettogame-default-rtdb.firebaseio.com"
+    };
 
+    // Inicializar Firebase
+    if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+    }
+    const db = firebase.database();
+
+    // GUARDAR PUNTAJE EN LA NUBE
     function registerOnly() {
         const nameInput = document.getElementById('user-name');
         let rawName = nameInput.value.trim().toUpperCase() || "ANÓNIMO";
-        const count = localRanking.filter(item => item.name.startsWith(rawName)).length;
-        let finalName = count > 0 ? `${rawName}-00${count}` : rawName;
-        localRanking.push({name: finalName, score: score});
-        localRanking.sort((a,b) => b.score - a.score);
-        localRanking = localRanking.slice(0, 10);
-        localStorage.setItem('diletto_ranking', JSON.stringify(localRanking));
-        alert("¡Puntuación registrada!");
+        
+        db.ref('ranking').push({
+            name: rawName,
+            score: score,
+            timestamp: Date.now()
+        }).then(() => {
+            alert("¡Puntuación registrada en el Ranking Global de Diletto!");
+            showRanking();
+        }).catch(err => {
+            alert("Error al guardar puntaje. Revisa tu conexión.");
+        });
     }
 
     function restartOnly() {
@@ -152,20 +176,36 @@
         showPrep(); 
     }
 
+    // MOSTRAR RANKING GLOBAL DESDE LA NUBE
     function showRanking() {
         document.getElementById('register-overlay').style.display = 'none';
         document.getElementById('menu-screen').style.display = 'none';
         document.getElementById('game-over-overlay').style.display = 'none';
         const container = document.getElementById('ranking-container');
-        container.innerHTML = '';
-        if(localRanking.length === 0) {
-            container.innerHTML = '<p style="font-size:0.7rem; opacity:0.6; text-align:center;">Aún no hay registros.</p>';
-        } else {
-            localRanking.forEach((item, i) => {
-                container.innerHTML += `<div class="ranking-item"><span>${i+1}. ${item.name}</span> <span>${item.score} pts</span></div>`;
-            });
-        }
+        container.innerHTML = '<p style="font-size:0.7rem; text-align:center;">Cargando mejores puntajes...</p>';
         document.getElementById('ranking-overlay').style.display = 'flex';
+
+        // Consultamos los mejores 10 puntajes
+        db.ref('ranking').orderByChild('score').limitToLast(10).once('value', (snapshot) => {
+            let scores = [];
+            snapshot.forEach((child) => {
+                scores.push(child.val());
+            });
+            scores.reverse();
+
+            container.innerHTML = '';
+            if (scores.length === 0) {
+                container.innerHTML = '<p style="font-size:0.7rem; opacity:0.6; text-align:center;">¡Sé el primero en registrarte!</p>';
+            } else {
+                scores.forEach((item, i) => {
+                    container.innerHTML += `
+                        <div class="ranking-item">
+                            <span>${i+1}. ${item.name}</span> 
+                            <span>${item.score} pts</span>
+                        </div>`;
+                });
+            }
+        });
     }
 
     const canvas = document.getElementById('gameCanvas');
@@ -182,10 +222,7 @@
         document.getElementById('prep-overlay').style.display = 'flex';
         document.getElementById('prep-text').style.display = 'block';
         document.getElementById('countdown').innerText = '';
-        
-        lives = 3; 
-        score = 0;
-        level = 1;
+        lives = 3; score = 0; level = 1;
         updateHearts();
     }
 
@@ -230,8 +267,7 @@
         document.getElementById('level-label').innerText = "Nivel " + level;
         setupBricks(); 
         resetPositions();
-        gameActive = true; 
-        isPaused = false; 
+        gameActive = true; isPaused = false; 
         updateHearts(); 
         draw();
     }
@@ -287,9 +323,7 @@
         if(activeBricks === 0 && gameActive) {
             level++;
             document.getElementById('level-label').innerText = "Nivel " + level;
-            setupBricks(); 
-            resetPositions();
-            // Evitamos que el ciclo continúe este frame para que se procesen los nuevos ladrillos
+            setupBricks(); resetPositions();
             requestAnimationFrame(draw);
             return;
         }
@@ -312,20 +346,15 @@
         if(ball.y + ball.dy < 90) ball.dy = -ball.dy;
 
         if(ball.y + ball.dy > canvas.height) {
-            lives--; 
-            updateHearts();
+            lives--; updateHearts();
             if(lives <= 0) {
                 gameActive = false;
                 document.getElementById('final-score').innerText = score;
                 document.getElementById('game-over-overlay').style.display = 'flex';
                 return; 
-            } else {
-                resetPositions();
-            }
+            } else { resetPositions(); }
         } else if(ball.y + ball.dy > paddle.y - ball.r) {
-            if(ball.x > paddle.x && ball.x < paddle.x + paddle.w) {
-                ball.dy = -ball.dy;
-            }
+            if(ball.x > paddle.x && ball.x < paddle.x + paddle.w) { ball.dy = -ball.dy; }
         }
         
         ball.x += ball.dx; ball.y += ball.dy;

@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Diletto Artesanal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;900&family=Archivo+Black&family=Fredoka+One&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --terracota: #B73225;
+            --crema: #F5EBE0;
+            --negro: #1b1b1b;
+            --naranja: #FB8500;
+        }
+
+        body, html { margin: 0; padding: 0; height: 100%; width: 100%; font-family: 'Montserrat', sans-serif; overflow: hidden; background-color: var(--negro); touch-action: none; }
+        
+        .background { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-image: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('FONDO DE JUEGO.jpg'); background-size: cover; background-position: center; z-index: -1; }
+
+        /* --- MENÚ PRINCIPAL ADAPTADO --- */
+        #menu-screen { display: flex; flex-direction: column; align-items: center; justify-content: space-between; height: 100vh; padding: 5vh 20px; box-sizing: border-box; text-align: center; }
+        .top-label { color: var(--crema); font-weight: 900; font-size: 1.2rem; letter-spacing: 5px; text-transform: uppercase; }
+        .center-content { flex-grow: 1; display: flex; flex-direction: column; justify-content: center; gap: 8px; width: 100%; }
+        
+        .block-small-black { background-color: #000; color: var(--crema); padding: 5px 12px; font-weight: 900; font-size: 0.9rem; margin: 0 auto; transform: rotate(-2deg); }
+        .block-main-artisan { font-family: 'Fredoka One', cursive; color: var(--terracota); font-size: 2.5rem; line-height: 0.9; text-shadow: 2px 2px 0px var(--crema); margin: 10px 0; text-transform: uppercase; }
+        .block-terracota { background-color: var(--terracota); color: var(--crema); padding: 8px 20px; font-weight: 900; font-size: 1.1rem; margin: 0 auto; transform: rotate(1deg); }
+        .block-black-long { background-color: #000; color: var(--crema); padding: 8px 20px; font-weight: 900; font-size: 1.1rem; margin: 0 auto; transform: rotate(-1deg); width: fit-content; }
+        .block-small-contigo { background-color: #000; color: var(--crema); padding: 5px 15px; font-weight: 900; font-size: 1rem; margin: 0 auto; transform: rotate(2deg); }
+        
+        @media (min-width: 600px) {
+            .block-main-artisan { font-size: 3.3rem; }
+            .block-terracota, .block-black-long { font-size: 1.4rem; }
+        }
+
+        .bottom-actions { width: 100%; max-width: 300px; display: flex; flex-direction: column; gap: 10px; padding-bottom: 20px; }
+        .btn { font-family: 'Archivo Black', sans-serif; padding: 15px; border-radius: 12px; font-size: 1rem; text-transform: uppercase; border: none; cursor: pointer; transition: 0.2s; width: 100%; }
+        .btn-primary { background-color: #7A1D14; color: var(--crema); border-bottom: 5px solid #4D0F0A; }
+        .btn-secondary { background: rgba(0, 0, 0, 0.4); color: var(--crema); border: 2px solid var(--crema); backdrop-filter: blur(5px); }
+
+        #mute-btn-menu { position: absolute; top: 15px; right: 15px; background: rgba(0,0,0,0.5); border: 2px solid var(--crema); color: white; border-radius: 50%; width: 40px; height: 40px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1rem; z-index: 10; }
+
+        /* --- UI JUEGO --- */
+        #game-ui { position: absolute; top: 0; width: 100%; padding: 10px 15px; display: none; justify-content: space-between; align-items: flex-start; box-sizing: border-box; z-index: 10; background: rgba(0,0,0,0.7); }
+        .ui-label { font-weight: 900; font-size: 0.6rem; color: var(--crema); margin-bottom: 2px; text-transform: uppercase; letter-spacing: 1px; }
+        .lives-container { display: flex; gap: 4px; justify-content: flex-end; }
+        .heart { width: 18px; height: 18px; fill: #ff0000; }
+        .heart.empty { fill: transparent; stroke: var(--crema); stroke-width: 2px; }
+        #btn-pause { background: var(--terracota); border: 1.5px solid var(--crema); color: white; padding: 4px 12px; border-radius: 6px; font-weight: 900; font-size: 0.7rem; cursor: pointer; margin-top: 3px; }
+
+        /* --- OVERLAYS ADAPTADOS --- */
+        #prep-overlay, #pause-overlay, #game-over-overlay, #register-overlay, #ranking-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); flex-direction: column; align-items: center; justify-content: center; z-index: 100; text-align: center; color: white; }
+        #pause-box, #game-over-box, #register-box, #ranking-box { background: var(--negro); border: 3px solid var(--terracota); padding: 20px; border-radius: 15px; display: flex; flex-direction: column; gap: 10px; width: 85%; max-width: 280px; position: relative; }
+
+        .input-group { text-align: left; margin-bottom: 5px; }
+        .input-label { font-size: 0.65rem; font-weight: 900; text-transform: uppercase; color: var(--crema); display: block; margin-bottom: 3px; }
+        .input-field { background: transparent; border: none; border-bottom: 2px solid var(--crema); color: white; width: 100%; padding: 6px 0; font-family: 'Montserrat'; font-size: 0.9rem; outline: none; }
+        
+        .ranking-list { width: 100%; margin: 10px 0; text-align: left; min-height: 40px; max-height: 40vh; overflow-y: auto; }
+        .ranking-item { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid rgba(245, 235, 224, 0.1); font-weight: 900; font-size: 0.8rem; }
+
+        #countdown { font-size: 4rem; font-weight: 900; color: var(--naranja); font-family: 'Fredoka One'; }
+
+        canvas { display: none; width: 100%; height: 100%; }
+    </style>
+</head>
+<body onclick="unlockAudio()">
+    <div class="background"></div>
+
+    <audio id="music-menu" loop>
+        <source src="MUSICA_MENU.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="music-game" loop>
+        <source src="MUSICA_JUEGO.mp3" type="audio/mpeg">
+    </audio>
+
+    <div id="menu-screen">
+        <button id="mute-btn-menu" onclick="event.stopPropagation(); toggleMute();">🔊</button>
+        <div class="top-label">DILETTO</div>
+        <div class="center-content">
+            <div class="block-small-black">EN</div>
+            <div class="block-main-artisan">DILETTO<br>ARTESANAL</div>
+            <div class="block-terracota">COMPARTIMOS</div>
+            <div class="block-black-long">EL MEJOR MOMENTO</div>
+            <div class="block-small-contigo">CONTIGO</div>
+        </div>
+        <div class="bottom-actions">
+            <button class="btn btn-primary" onclick="event.stopPropagation(); showPrep();">COMENZAR A JUGAR</button>
+            <button class="btn btn-secondary" onclick="event.stopPropagation(); showRanking();">VER RANKING</button>
+        </div>
+    </div>
+
+    <div id="game-ui">
+        <div>
+            <div class="ui-label">Puntuación</div>
+            <div style="font-weight:900; font-size:1rem; color:var(--naranja)" id="score-val">0</div>
+        </div>
+        <div style="text-align: center;">
+            <div style="font-family:'Fredoka One'; color:var(--terracota); font-size:1.1rem; text-shadow:1px 1px var(--crema);">DILETTO</div>
+            <button id="btn-pause" onclick="togglePause()">PAUSA</button>
+        </div>
+        <div style="text-align:right">
+            <div class="ui-label" id="level-label">Nivel 1</div>
+            <div class="lives-container" id="lives-box"></div>
+        </div>
+    </div>
+
+    <div id="ranking-overlay">
+        <div id="ranking-box">
+            <div onclick="goToMenu()" style="position:absolute; top:10px; right:15px; font-size:1.5rem; cursor:pointer;">×</div>
+            <h2 style="font-family:'Fredoka One'; color:var(--crema); font-size:1.3rem; margin:0;">RANKING</h2>
+            <div class="ranking-list" id="ranking-container"></div>
+            <button class="btn btn-primary" style="padding:12px; font-size:0.9rem;" onclick="showPrep()">JUGAR AHORA</button>
+        </div>
+    </div>
+
+    <div id="register-overlay">
+        <div id="register-box">
+            <h2 style="font-family:'Fredoka One'; color:var(--crema); font-size:1.3rem; margin:0; text-transform: uppercase;">Tus datos</h2>
+            <div class="input-group">
+                <label class="input-label">Nombre</label>
+                <input type="text" id="user-name" class="input-field" placeholder="Tu nombre">
+            </div>
+            <button class="btn btn-primary" style="padding:12px; font-size:0.9rem;" onclick="restartOnly()">INTENTAR DE NUEVO</button>
+            <button class="btn btn-primary" style="padding:12px; font-size:0.8rem; background-color: #5a140d;" onclick="registerOnly()">GUARDAR PUNTAJE</button>
+            <button class="btn btn-secondary" style="padding:10px; font-size:0.8rem;" onclick="showRanking()">VER RANKING</button>
+        </div>
+    </div>
+
+    <div id="pause-overlay">
+        <div id="pause-box">
+            <h2 style="font-family:'Fredoka One'; color:var(--terracota); margin:0;">PAUSA</h2>
+            <button class="btn btn-primary" onclick="togglePause()">REANUDAR</button>
+            <button id="pause-mute-btn" class="btn btn-secondary" onclick="toggleMute()">SILENCIAR</button>
+            <button class="btn btn-secondary" onclick="goToMenu()">MENÚ</button>
+        </div>
+    </div>
+
+    <div id="game-over-overlay">
+        <div id="game-over-box">
+            <div onclick="goToMenu()" style="position:absolute; top:10px; right:15px; font-size:1.5rem; cursor:pointer;">×</div>
+            <h2 style="font-family:'Fredoka One'; color:var(--crema); font-size:1.2rem; margin:0;">¡BUEN JUEGO!</h2>
+            <div style="background:#7A1D14; border-radius:10px; padding:10px;">
+                <span id="final-score" style="font-weight:900; font-size:1.4rem; color:var(--naranja);">0</span>
+            </div>
+            <button class="btn btn-primary" onclick="showRegister()">REGISTRARME</button>
+            <button class="btn btn-secondary" onclick="showPrep()">VOLVER A JUGAR</button>
+        </div>
+    </div>
+
+    <div id="prep-overlay">
+        <div id="prep-text">
+            <p style="font-size:1.2rem; font-weight:900;">¡LISTO!</p>
+            <button class="btn btn-primary" onclick="runCountdown()">¡A JUGAR!</button>
+        </div>
+        <div id="countdown"></div>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+
+<script>
+    let localRanking = JSON.parse(localStorage.getItem('diletto_ranking')) || [];
+    const musicMenu = document.getElementById('music-menu');
+    const musicGame = document.getElementById('music-game');
+    let isMuted = false;
+    let audioUnlocked = false;
+
+    function unlockAudio() {
+        if (audioUnlocked) return;
+        musicMenu.play().then(() => {
+            if (isMuted) musicMenu.pause();
+            audioUnlocked = true;
+        }).catch(e => {});
+    }
+
+    function toggleMute() {
+        isMuted = !isMuted;
+        musicMenu.muted = isMuted;
+        musicGame.muted = isMuted;
+        document.getElementById('mute-btn-menu').innerText = isMuted ? "❌" : "🔊";
+        document.getElementById('pause-mute-btn').innerText = isMuted ? "ACTIVAR AUDIO" : "SILENCIAR";
+        if(!isMuted) {
+            if(gameActive && !isPaused) musicGame.play();
+            else if(!gameActive) musicMenu.play();
+        }
+    }
+
+    function registerOnly() {
+        const nameInput = document.getElementById('user-name');
+        let rawName = nameInput.value.trim().toUpperCase() || "ANÓNIMO";
+        const count = localRanking.filter(item => item.name.startsWith(rawName)).length;
+        let finalName = count > 0 ? `${rawName}-00${count}` : rawName;
+        localRanking.push({name: finalName, score: score});
+        localRanking.sort((a,b) => b.score - a.score);
+        localRanking = localRanking.slice(0, 10);
+        localStorage.setItem('diletto_ranking', JSON.stringify(localRanking));
+        alert("¡Puntuación registrada!");
+    }
+
+    function restartOnly() {
+        document.getElementById('register-overlay').style.display = 'none';
+        showPrep(); 
+    }
+
+    function showRanking() {
+        document.getElementById('register-overlay').style.display = 'none';
+        document.getElementById('menu-screen').style.display = 'none';
+        document.getElementById('game-over-overlay').style.display = 'none';
+        const container = document.getElementById('ranking-container');
+        container.innerHTML = '';
+        if(localRanking.length === 0) {
+            container.innerHTML = '<p style="font-size:0.7rem; opacity:0.6; text-align:center;">Aún no hay registros.</p>';
+        } else {
+            localRanking.forEach((item, i) => {
+                container.innerHTML += `<div class="ranking-item"><span>${i+1}. ${item.name}</span> <span>${item.score} pts</span></div>`;
+            });
+        }
+        document.getElementById('ranking-overlay').style.display = 'flex';
+    }
+
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    let ball, paddle, bricks = [], score = 0, lives = 3, level = 1, gameActive = false, isPaused = false;
+
+    function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+    window.addEventListener('resize', resize); resize();
+
+    function showPrep() {
+        musicMenu.pause();
+        musicGame.pause();
+        document.getElementById('menu-screen').style.display = 'none';
+        document.getElementById('ranking-overlay').style.display = 'none';
+        document.getElementById('game-over-overlay').style.display = 'none';
+        document.getElementById('prep-overlay').style.display = 'flex';
+        document.getElementById('prep-text').style.display = 'block';
+        document.getElementById('countdown').innerText = '';
+        updateHearts();
+    }
+
+    function togglePause() {
+        isPaused = !isPaused;
+        document.getElementById('pause-overlay').style.display = isPaused ? 'flex' : 'none';
+        if (isPaused) musicGame.pause(); else if(gameActive && !isMuted) musicGame.play();
+        if (!isPaused && gameActive) draw();
+    }
+
+    function goToMenu() { location.reload(); }
+    function showRegister() { document.getElementById('game-over-overlay').style.display = 'none'; document.getElementById('register-overlay').style.display = 'flex'; }
+
+    function updateHearts() {
+        const box = document.getElementById('lives-box');
+        box.innerHTML = '';
+        for(let i=0; i<3; i++) {
+            box.innerHTML += `<svg class="heart ${i < lives ? '' : 'empty'}" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>`;
+        }
+    }
+
+    function runCountdown() {
+        document.getElementById('prep-text').style.display = 'none';
+        const cd = document.getElementById('countdown');
+        let c = 3;
+        const timer = setInterval(() => {
+            if(c > 0) cd.innerText = c;
+            else if(c === 0) cd.innerText = "¡GO!";
+            else { 
+                clearInterval(timer); 
+                cd.innerText = '';
+                startGame(); 
+            }
+            c--;
+        }, 800);
+    }
+
+    function startGame() {
+        if(!isMuted) { musicGame.currentTime = 0; musicGame.play().catch(e => {}); }
+        document.getElementById('prep-overlay').style.display = 'none';
+        document.getElementById('game-ui').style.display = 'flex';
+        canvas.style.display = 'block';
+        score = 0; lives = 3; level = 1;
+        document.getElementById('score-val').innerText = score;
+        setupBricks(); resetPositions();
+        gameActive = true; isPaused = false; updateHearts(); draw();
+    }
+
+    function resetPositions() {
+        paddle = { w: 100, h: 20, x: canvas.width/2 - 50, y: canvas.height - 100 };
+        ball = { x: canvas.width/2, y: paddle.y - 15, dx: 4, dy: -4, r: 8 };
+    }
+
+    function setupBricks() {
+        bricks = [];
+        const cols = 6, rows = 4;
+        const bW = (canvas.width - 40) / cols;
+        for(let c=0; c<cols; c++) {
+            bricks[c] = [];
+            for(let r=0; r<rows; r++) bricks[c][r] = { x: (c*(bW+4))+20, y: (r*25)+100, status: 1 };
+        }
+    }
+
+    // CONTROL TÁCTIL
+    canvas.addEventListener('touchmove', (e) => {
+        if(!gameActive || isPaused) return;
+        e.preventDefault();
+        paddle.x = e.touches[0].clientX - paddle.w/2;
+    }, { passive: false });
+
+    // CONTROL CON RATÓN (AÑADIDO NUEVAMENTE)
+    window.addEventListener('mousemove', (e) => {
+        if(!gameActive || isPaused) return;
+        paddle.x = e.clientX - paddle.w/2;
+    });
+
+    function draw() {
+        if(!gameActive || isPaused) return;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        if(paddle.x < 5) paddle.x = 5;
+        if(paddle.x + paddle.w > canvas.width-5) paddle.x = canvas.width - paddle.w - 5;
+
+        bricks.forEach(col => col.forEach(b => {
+            if(b.status === 1) {
+                ctx.fillStyle = b.y < 150 ? "#B73225" : "#FB8500";
+                ctx.beginPath(); ctx.roundRect(b.x, b.y, (canvas.width-40)/6 - 4, 20, 4); ctx.fill();
+                if(ball.x > b.x && ball.x < b.x + (canvas.width-40)/6 && ball.y > b.y && ball.y < b.y + 20) {
+                    ball.dy = -ball.dy; b.status = 0; score += 10;
+                    document.getElementById('score-val').innerText = score;
+                }
+            }
+        }));
+
+        ctx.fillStyle = "#7A1D14";
+        ctx.strokeStyle = "white";
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.roundRect(paddle.x, paddle.y, paddle.w, paddle.h, 10); 
+        ctx.fill(); ctx.stroke();
+
+        ctx.fillStyle = "white";
+        ctx.font = "900 10px Montserrat";
+        ctx.textAlign = "center";
+        ctx.fillText("DILETTO", paddle.x + paddle.w/2, paddle.y + 14);
+        
+        ctx.beginPath(); ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI*2);
+        ctx.fillStyle = "#FFB703"; ctx.fill();
+
+        if(ball.x + ball.dx > canvas.width-ball.r || ball.x + ball.dx < ball.r) ball.dx = -ball.dx;
+        if(ball.y + ball.dy < 90) ball.dy = -ball.dy;
+
+        if(ball.y + ball.dy > paddle.y - ball.r) {
+            if(ball.x > paddle.x && ball.x < paddle.x + paddle.w) ball.dy = -ball.dy;
+            else if (ball.y > canvas.height) {
+                lives--; updateHearts();
+                if(lives === 0) {
+                    gameActive = false;
+                    musicGame.pause();
+                    document.getElementById('final-score').innerText = score;
+                    document.getElementById('game-over-overlay').style.display = 'flex';
+                }
+                else resetPositions();
+            }
+        }
+        ball.x += ball.dx; ball.y += ball.dy;
+        requestAnimationFrame(draw);
+    }
+</script>
+</body>
+</html>
